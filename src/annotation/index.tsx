@@ -8,7 +8,7 @@ import { annotationDefinitions } from "./const/definitions";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import MyPlugin from "@/main";
-import { ItemView } from "obsidian";
+import { ItemView, normalizePath, TFile } from "obsidian";
 
 export default class PdfjsAnnotationExtension {
 	PDFJS_PDFViewerApplication: PDFViewerApplication; // PDF.js 的 PDFViewerApplication 对象
@@ -23,6 +23,7 @@ export default class PdfjsAnnotationExtension {
 	viewer: any;
 	view: ItemView;
 	plugin: MyPlugin;
+	file: TFile;
 
 	constructor(
 		pdfjsViewer: PDFViewerApplication,
@@ -33,6 +34,7 @@ export default class PdfjsAnnotationExtension {
 		this.viewer = viewer;
 		this.view = view;
 		this.plugin = plugin;
+		this.file = view.file;
 		// 初始化 PDF.js 对象和相关属性
 		this.PDFJS_PDFViewerApplication = pdfjsViewer;
 		this.PDFJS_EventBus = this.PDFJS_PDFViewerApplication.eventBus;
@@ -69,10 +71,11 @@ export default class PdfjsAnnotationExtension {
 		this.addCustomStyle();
 		this.bindPdfjsEvents();
 		this.renderToolbar();
+		this.aroundPdfSave();
 	}
 
 	public unload() {
-		this.painter.unmount();
+		// this.painter.unmount();
 		document.body.classList.remove("PdfjsAnnotationExtension");
 		this.toolbarRoot && this.toolbarRoot.unmount();
 		// this.unbindPdfjsEvents();
@@ -137,8 +140,8 @@ export default class PdfjsAnnotationExtension {
 			this.loadedDocumentEvent.bind(this),
 		);
 		// 重置 Pdfjs AnnotationStorage 解决有嵌入图片打印、下载会ImageBitmap报错的问题
-		// this.PDFJS_EventBus._on("beforeprint", this.printEvent.bind(this));
-		// this.PDFJS_EventBus._on("download", this.downloadEvent.bind(this));
+		this.PDFJS_EventBus._on("beforeprint", this.printEvent.bind(this));
+		this.PDFJS_EventBus._on("download", this.downloadEvent.bind(this));
 	}
 
 	private async initCanvasEvent({
@@ -163,10 +166,12 @@ export default class PdfjsAnnotationExtension {
 	}
 
 	private printEvent() {
+		console.log("printEvent");
 		this.painter.resetPdfjsAnnotationStorage();
 	}
 
 	private downloadEvent() {
+		console.log("downloadEvent");
 		this.painter.resetPdfjsAnnotationStorage();
 	}
 
@@ -182,8 +187,66 @@ export default class PdfjsAnnotationExtension {
 			"documentloaded",
 			this.loadedDocumentEvent.bind(this),
 		);
-		// this.PDFJS_EventBus._off("beforeprint", this.printEvent.bind(this));
-		// this.PDFJS_EventBus._off("download", this.downloadEvent.bind(this));
+		this.PDFJS_EventBus._off("beforeprint", this.printEvent.bind(this));
+		this.PDFJS_EventBus._off("download", this.downloadEvent.bind(this));
+	}
+
+	/**
+	 * @description 保存 PDF 时的操作
+	 */
+	private aroundPdfSave() {
+		this.PDFJS_PDFViewerApplication.save = async () => {
+			if (!this.view.file) return;
+
+			let e = arguments[0] !== undefined ? arguments[0] : {};
+			if (this.PDFJS_PDFViewerApplication._saveInProgress) {
+				return;
+			}
+			this.PDFJS_PDFViewerApplication._saveInProgress = true;
+			await this.PDFJS_PDFViewerApplication.pdfScriptingManager.dispatchWillSave();
+			const t = this.PDFJS_PDFViewerApplication._downloadUrl;
+			const i = this.PDFJS_PDFViewerApplication._docFilename;
+			try {
+				this.PDFJS_PDFViewerApplication._ensureDownloadComplete();
+				const n =
+					(await this.PDFJS_PDFViewerApplication.pdfDocument.saveDocument()) as Uint8Array;
+				console.log(n);
+				const r = new Blob([n], { type: "application/pdf" });
+				// const arrayBuffer = await r.arrayBuffer();
+
+				console.log(this.view);
+				const file = await this.plugin.app.vault.adapter.exists(
+					normalizePath(this.file.path),
+				);
+
+				await this.plugin.app.vault.adapter.writeBinary(
+					normalizePath(this.file.path),
+					n.buffer,
+				);
+				// await this.PDFJS_PDFViewerApplication.downloadManager.download(
+				// 	r,
+				// 	t,
+				// 	i,
+				// 	e,
+				// );
+			} catch (t) {
+				console.error(`Error when saving the document: ${t.message}`);
+				await this.PDFJS_PDFViewerApplication.download(e);
+			} finally {
+				await this.PDFJS_PDFViewerApplication.pdfScriptingManager.dispatchDidSave();
+				this.PDFJS_PDFViewerApplication._saveInProgress = false;
+			}
+			if (this.PDFJS_PDFViewerApplication._hasAnnotationEditors) {
+				this.PDFJS_PDFViewerApplication.externalServices.reportTelemetry(
+					{
+						type: "editing",
+						data: {
+							type: "save",
+						},
+					},
+				);
+			}
+		};
 	}
 }
 
