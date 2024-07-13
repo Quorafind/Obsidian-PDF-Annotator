@@ -1,4 +1,4 @@
-import { ItemView, Plugin } from "obsidian";
+import { ItemView, loadPdfJs, Plugin } from "obsidian";
 import PdfjsAnnotationExtension from "./annotation";
 import { around } from "monkey-around";
 // import { around } from "monkey-around";
@@ -7,6 +7,7 @@ export default class MyPlugin extends Plugin {
 	pdfAnnotators: PdfjsAnnotationExtension[] = [];
 
 	async onload() {
+		await loadPdfJs();
 		const leaves = this.app.workspace.getLeavesOfType("pdf");
 		if (leaves.length > 0) {
 			for (const leaf of leaves) {

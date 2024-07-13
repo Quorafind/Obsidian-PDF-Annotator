@@ -20,6 +20,7 @@ export default class PdfjsAnnotationExtension {
 	painter: Painter; // 画笔实例
 
 	toolbarRoot: ReactDOM.Root;
+	toolbarContainer: HTMLDivElement;
 	viewer: any;
 	view: ItemView;
 	plugin: MyPlugin;
@@ -31,6 +32,7 @@ export default class PdfjsAnnotationExtension {
 		view: ItemView,
 		plugin: MyPlugin,
 	) {
+		// 初始化来自 Obsidian 的对象和属性
 		this.viewer = viewer;
 		this.view = view;
 		this.plugin = plugin;
@@ -38,12 +40,10 @@ export default class PdfjsAnnotationExtension {
 		// 初始化 PDF.js 对象和相关属性
 		this.PDFJS_PDFViewerApplication = pdfjsViewer;
 		this.PDFJS_EventBus = this.PDFJS_PDFViewerApplication.eventBus;
-		console.log(pdfjsViewer.pdfViewer);
-		console.log(this.PDFJS_PDFViewerApplication.appConfig);
 		this.$PDFJS_sidebarContainer =
 			this.PDFJS_PDFViewerApplication.pdfSidebar.sidebarContainer;
 		this.$PDFJS_toolbar_container =
-			this.PDFJS_PDFViewerApplication.toolbar.toolbarEl;
+			this.PDFJS_PDFViewerApplication.toolbar.toolbarRightEl;
 		this.$PDFJS_viewerContainer =
 			this.PDFJS_PDFViewerApplication.pdfViewer.container;
 		// 使用 createRef 方法创建 React 引用
@@ -79,6 +79,7 @@ export default class PdfjsAnnotationExtension {
 		document.body.classList.remove("PdfjsAnnotationExtension");
 		this.toolbarRoot && this.toolbarRoot.unmount();
 		// this.unbindPdfjsEvents();
+		this.toolbarContainer.detach();
 	}
 
 	/**
@@ -92,14 +93,14 @@ export default class PdfjsAnnotationExtension {
 	 * @description 渲染自定义工具栏
 	 */
 	private renderToolbar(): void {
-		const toolbar = createEl("div", {
+		this.toolbarContainer = this.$PDFJS_toolbar_container.createEl("div", {
 			cls: "PdfjsAnnotationExtension-toolbar",
 		});
-		this.$PDFJS_toolbar_container.insertAdjacentElement(
-			"afterend",
-			toolbar,
-		);
-		this.toolbarRoot = createRoot(toolbar);
+		// this.$PDFJS_toolbar_container.insertAdjacentElement(
+		// 	"afterend",
+		// 	toolbar,
+		// );
+		this.toolbarRoot = createRoot(this.toolbarContainer);
 		this.toolbarRoot.render(
 			<CustomToolbar
 				ref={this.customToolbarRef}
@@ -161,17 +162,14 @@ export default class PdfjsAnnotationExtension {
 	}
 
 	private loadedDocumentEvent() {
-		console.log("loadedDocumentEvent");
 		this.painter.initWebSelection(this.$PDFJS_viewerContainer);
 	}
 
 	private printEvent() {
-		console.log("printEvent");
 		this.painter.resetPdfjsAnnotationStorage();
 	}
 
 	private downloadEvent() {
-		console.log("downloadEvent");
 		this.painter.resetPdfjsAnnotationStorage();
 	}
 
@@ -195,43 +193,41 @@ export default class PdfjsAnnotationExtension {
 	 * @description 保存 PDF 时的操作
 	 */
 	private aroundPdfSave() {
-		this.PDFJS_PDFViewerApplication.save = async () => {
+		this.PDFJS_PDFViewerApplication.save = async (downloadOptions: any) => {
 			if (!this.view.file) return;
 
-			let e = arguments[0] !== undefined ? arguments[0] : {};
+			let options = downloadOptions || {};
 			if (this.PDFJS_PDFViewerApplication._saveInProgress) {
 				return;
 			}
 			this.PDFJS_PDFViewerApplication._saveInProgress = true;
 			await this.PDFJS_PDFViewerApplication.pdfScriptingManager.dispatchWillSave();
-			const t = this.PDFJS_PDFViewerApplication._downloadUrl;
-			const i = this.PDFJS_PDFViewerApplication._docFilename;
+			// 不需要的代码，暂时保留
+			// const downloadUrl = this.PDFJS_PDFViewerApplication._downloadUrl;
+			// const filename = this.PDFJS_PDFViewerApplication._docFilename;
 			try {
 				this.PDFJS_PDFViewerApplication._ensureDownloadComplete();
-				const n =
+				const savedDocument =
 					(await this.PDFJS_PDFViewerApplication.pdfDocument.saveDocument()) as Uint8Array;
-				console.log(n);
-				const r = new Blob([n], { type: "application/pdf" });
-				// const arrayBuffer = await r.arrayBuffer();
-
-				console.log(this.view);
-				const file = await this.plugin.app.vault.adapter.exists(
-					normalizePath(this.file.path),
-				);
+				const pdfBlob = new Blob([savedDocument], {
+					type: "application/pdf",
+				});
 
 				await this.plugin.app.vault.adapter.writeBinary(
 					normalizePath(this.file.path),
-					n.buffer,
+					savedDocument.buffer,
 				);
 				// await this.PDFJS_PDFViewerApplication.downloadManager.download(
-				// 	r,
-				// 	t,
-				// 	i,
-				// 	e,
+				//     pdfBlob,
+				//     downloadUrl,
+				//     filename,
+				//     options,
 				// );
-			} catch (t) {
-				console.error(`Error when saving the document: ${t.message}`);
-				await this.PDFJS_PDFViewerApplication.download(e);
+			} catch (error) {
+				console.error(
+					`Error when saving the document: ${error.message}`,
+				);
+				await this.PDFJS_PDFViewerApplication.download(options);
 			} finally {
 				await this.PDFJS_PDFViewerApplication.pdfScriptingManager.dispatchDidSave();
 				this.PDFJS_PDFViewerApplication._saveInProgress = false;

@@ -23,7 +23,7 @@ export default defineConfig(({mode}) => {
 						: terser({
 							compress: {
 								defaults: false,
-								drop_console: true,
+								drop_console: ['log', 'info'],
 							},
 							mangle: {
 								eval: true,
@@ -55,6 +55,7 @@ export default defineConfig(({mode}) => {
 				external: [
 					'obsidian',
 					'electron',
+					'pdfjs',
 					'@codemirror/autocomplete',
 					'@codemirror/collab',
 					'@codemirror/commands',

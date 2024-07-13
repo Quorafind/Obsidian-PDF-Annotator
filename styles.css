@@ -12,10 +12,12 @@
 }
 .CustomToolbar {
   width: 100%;
-  height: 72px;
   display: flex;
   justify-content: center;
   align-items: center;
+  --toolbar-border-color: var(--background-modifier-border);
+  --button-hover-color: var(--background-modifier-hover);
+  --main-color: var(--color-accent);
 }
 .CustomToolbar .buttons {
   display: flex;
