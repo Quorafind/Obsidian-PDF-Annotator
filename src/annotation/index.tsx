@@ -133,16 +133,34 @@ export default class PdfjsAnnotationExtension {
 		// 监听页面渲染完成事件
 		this.PDFJS_EventBus._on(
 			"pagerendered",
-			this.initCanvasEvent.bind(this),
+			({
+				source,
+				cssTransform,
+				pageNumber,
+			}: {
+				source: PDFPageView;
+				cssTransform: boolean;
+				pageNumber: number;
+			}) => {
+				this.painter.initCanvas({
+					pageView: source,
+					cssTransform,
+					pageNumber,
+				});
+				// this.painter.resetPdfjsAnnotationStorage();
+			},
 		);
 		// 监听文档加载完成事件
-		this.PDFJS_EventBus._on(
-			"documentloaded",
-			this.loadedDocumentEvent.bind(this),
-		);
+		this.PDFJS_EventBus._on("documentloaded", () => {
+			this.painter.initWebSelection(this.$PDFJS_viewerContainer);
+		});
 		// 重置 Pdfjs AnnotationStorage 解决有嵌入图片打印、下载会ImageBitmap报错的问题
-		this.PDFJS_EventBus._on("beforeprint", this.printEvent.bind(this));
-		this.PDFJS_EventBus._on("download", this.downloadEvent.bind(this));
+		this.PDFJS_EventBus._on("beforeprint", () => {
+			this.painter.resetPdfjsAnnotationStorage();
+		});
+		this.PDFJS_EventBus._on("download", () => {
+			this.painter.resetPdfjsAnnotationStorage();
+		});
 	}
 
 	private async initCanvasEvent({
@@ -154,6 +172,8 @@ export default class PdfjsAnnotationExtension {
 		cssTransform: boolean;
 		pageNumber: number;
 	}) {
+		console.log("initCanvasEvent", source, cssTransform, pageNumber);
+
 		this.painter.initCanvas({
 			pageView: source,
 			cssTransform,
@@ -161,42 +181,20 @@ export default class PdfjsAnnotationExtension {
 		});
 	}
 
-	private loadedDocumentEvent() {
-		this.painter.initWebSelection(this.$PDFJS_viewerContainer);
-	}
-
-	private printEvent() {
-		this.painter.resetPdfjsAnnotationStorage();
-	}
-
-	private downloadEvent() {
-		this.painter.resetPdfjsAnnotationStorage();
-	}
-
-	/**
-	 * @description 卸载 PDF.js 相关事件
-	 */
-	private unbindPdfjsEvents(): void {
-		this.PDFJS_EventBus._off(
-			"pagerendered",
-			this.initCanvasEvent.bind(this),
-		);
-		this.PDFJS_EventBus._off(
-			"documentloaded",
-			this.loadedDocumentEvent.bind(this),
-		);
-		this.PDFJS_EventBus._off("beforeprint", this.printEvent.bind(this));
-		this.PDFJS_EventBus._off("download", this.downloadEvent.bind(this));
-	}
-
 	/**
 	 * @description 保存 PDF 时的操作
 	 */
 	private aroundPdfSave() {
 		this.PDFJS_PDFViewerApplication.save = async (downloadOptions: any) => {
+			console.log("save", this.view.file.path, downloadOptions);
 			if (!this.view.file) return;
 
 			let options = downloadOptions || {};
+			console.log(
+				"save",
+				options,
+				this.PDFJS_PDFViewerApplication._saveInProgress,
+			);
 			if (this.PDFJS_PDFViewerApplication._saveInProgress) {
 				return;
 			}
@@ -206,17 +204,26 @@ export default class PdfjsAnnotationExtension {
 			// const downloadUrl = this.PDFJS_PDFViewerApplication._downloadUrl;
 			// const filename = this.PDFJS_PDFViewerApplication._docFilename;
 			try {
+				const annotations = this.painter.getPdfjsAllAnnotations();
 				this.PDFJS_PDFViewerApplication._ensureDownloadComplete();
-				const savedDocument =
-					(await this.PDFJS_PDFViewerApplication.pdfDocument.saveDocument()) as Uint8Array;
-				const pdfBlob = new Blob([savedDocument], {
-					type: "application/pdf",
-				});
 
-				await this.plugin.app.vault.adapter.writeBinary(
-					normalizePath(this.file.path),
-					savedDocument.buffer,
+				console.log("annotations", annotations);
+
+				this.plugin.controller.updateAnnotations(
+					this.view.file.path,
+					annotations,
 				);
+
+				// const savedDocument =
+				// 	(await this.PDFJS_PDFViewerApplication.pdfDocument.saveDocument()) as Uint8Array;
+				// const pdfBlob = new Blob([savedDocument], {
+				// 	type: "application/pdf",
+				// });
+				//
+				// await this.plugin.app.vault.adapter.writeBinary(
+				// 	normalizePath(this.file.path),
+				// 	savedDocument.buffer,
+				// );
 				// await this.PDFJS_PDFViewerApplication.downloadManager.download(
 				//     pdfBlob,
 				//     downloadUrl,
@@ -227,9 +234,9 @@ export default class PdfjsAnnotationExtension {
 				console.error(
 					`Error when saving the document: ${error.message}`,
 				);
-				await this.PDFJS_PDFViewerApplication.download(options);
+				// await this.PDFJS_PDFViewerApplication.download(options);
 			} finally {
-				await this.PDFJS_PDFViewerApplication.pdfScriptingManager.dispatchDidSave();
+				// await this.PDFJS_PDFViewerApplication.pdfScriptingManager.dispatchDidSave();
 				this.PDFJS_PDFViewerApplication._saveInProgress = false;
 			}
 			if (this.PDFJS_PDFViewerApplication._hasAnnotationEditors) {

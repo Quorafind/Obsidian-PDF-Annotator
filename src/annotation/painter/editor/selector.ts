@@ -211,6 +211,9 @@ export class Selector {
 		const groupId = group.id();
 		this.currentTransformerId = groupId;
 		const rawAnnotationStore = this.getAnnotationStore(groupId);
+		console.log("rawAnnotationStore", rawAnnotationStore);
+		if (!rawAnnotationStore) return;
+
 		group.off("dragend");
 		const transformer = new Konva.Transformer({
 			resizeEnabled: !rawAnnotationStore.readonly,

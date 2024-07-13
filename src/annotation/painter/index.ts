@@ -9,6 +9,7 @@ import {
 import {
 	AnnotationType,
 	IAnnotationContent,
+	IAnnotationStore,
 	IAnnotationType,
 	IPdfjsAnnotationStorage,
 } from "../const/definitions";
@@ -80,7 +81,17 @@ export class Painter {
 		this.pdfViewerApplication = PDFViewerApplication; // 初始化 PDFViewerApplication
 		this.pdfjsEventBus = PDFJS_EventBus; // 初始化 PDF.js EventBus
 		this.setDefaultMode = setDefaultMode; // 设置默认模式的函数
-		this.store = new Store({ PDFViewerApplication }); // 初始化存储实例
+
+		const restoreAnnotations =
+			this.plugin.controller.getAnnotation(this.view.file.path)?.data ||
+			[]; // 获取批注
+
+		this.store = new Store({
+			PDFViewerApplication,
+			initAnnotationStore: restoreAnnotations,
+		}); // 初始化存储实例
+
+		// this.restorePdfjsAnnotationStorage(restoreAnnotations); // 恢复 PDF.js 批注存储
 		this.selector = new Selector({
 			// 初始化选择器实例
 			konvaCanvasStore: this.konvaCanvasStore,
@@ -258,7 +269,17 @@ export class Painter {
 			wrapper: painterWrapper,
 			isActive: false,
 		});
+
+		const restoreAnnotations =
+			this.plugin.controller.getAnnotation(this.view.file.path)?.data ||
+			[]; // 获取批注
+
+		this.restorePdfjsAnnotationStorage(pageNumber, restoreAnnotations); // 恢复 PDF.js 批注存储
+		this.resetPdfjsAnnotationStorage();
+
 		this.reDrawAnnotation(pageNumber); // 重绘批注
+
+		// this.resetPdfjsAnnotationStorage();
 		this.enablePainting(); // 启用绘画
 	}
 
@@ -532,6 +553,7 @@ export class Painter {
 	private reDrawAnnotation(pageNumber: number): void {
 		const konvaCanvasStore = this.konvaCanvasStore.get(pageNumber); // 获取 KonvaCanvas 实例
 		const annotationStores = this.store.getByPage(pageNumber); // 获取指定页码的批注存储
+		console.log("reDrawAnnotation", pageNumber, annotationStores);
 		annotationStores.forEach((annotationStore) => {
 			const storeEditor = this.findEditor(
 				pageNumber,
@@ -542,6 +564,10 @@ export class Painter {
 					konvaCanvasStore.konvaStage,
 					annotationStore.konvaString,
 				); // 添加序列化组到图层
+			} else {
+				console.warn(
+					`Editor not found for annotation type: ${annotationStore.type}`,
+				);
 			}
 		});
 	}
@@ -556,6 +582,7 @@ export class Painter {
 			annotationStore.pageNumber,
 		); // 获取 KonvaCanvas 实例
 		if (!annotationStore) {
+			console.warn(`Annotation with id ${id} not found.`);
 			return;
 		}
 		this.store.delete(id);
@@ -564,8 +591,11 @@ export class Painter {
 			annotationStore.type,
 		);
 		if (storeEditor) {
+			console.log(storeEditor);
 			storeEditor.deleteGroup(id, konvaCanvasStore.konvaStage);
 		}
+
+		this.plugin.controller.deleteAnnotation(this.view.file.path, id);
 	}
 
 	/**
@@ -676,6 +706,72 @@ export class Painter {
 	 */
 	public resetPdfjsAnnotationStorage(): void {
 		this.store.resetAnnotationStorage();
+	}
+
+	/**
+	 * 获取 PDF.js 批注存储
+	 */
+	public getPdfjsAllAnnotations(): IAnnotationStore[] {
+		return this.store.getAllAnnotations();
+	}
+
+	/**
+	 * 恢复 PDF.js 批注存储
+	 */
+	public restorePdfjsAnnotationStorage(
+		pageNumber: number,
+		annotations: IAnnotationStore[],
+	): void {
+		this.store.restoreAnnotationStore(annotations);
+
+		// 遍历所有恢复的批注
+		annotations
+			.filter((annotation) => annotation.pageNumber === pageNumber)
+			.forEach((annotation) => {
+				const { pageNumber, type, konvaString } = annotation;
+
+				const konvaCanvas = this.konvaCanvasStore.get(pageNumber);
+
+				if (konvaCanvas) {
+					const { konvaStage } = konvaCanvas;
+
+					// 查找或创建对应类型的编辑器
+					let editor = this.findEditor(pageNumber, type);
+					if (!editor) {
+						editor = new EditorHighLight(
+							{
+								konvaStage,
+								pageNumber,
+								annotation: null,
+								onAdd: (
+									shapeGroup,
+									pdfjsAnnotationStorage,
+									annotationContent,
+								) => {
+									this.saveToStore(
+										shapeGroup,
+										pdfjsAnnotationStorage,
+										annotationContent,
+									);
+								},
+							},
+							type,
+						);
+
+						if (editor) {
+							this.editorStore.set(editor.id, editor);
+						}
+					}
+
+					// 使用编辑器重新绘制批注
+					if (editor) {
+						editor.addSerializedGroupToLayer(
+							konvaStage,
+							konvaString,
+						);
+					}
+				}
+			});
 	}
 
 	/**
