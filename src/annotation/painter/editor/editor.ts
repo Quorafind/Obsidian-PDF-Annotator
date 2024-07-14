@@ -162,6 +162,8 @@ export abstract class Editor {
 		); // 查找对应 ID 的 Konva.Group 对象
 		if (group) {
 			group.destroy(); // 销毁 Konva.Group 对象
+			group.remove(); // 从 Konva Stage 中移除 Konva.Group 对象
+			this.konvaStage.batchDraw(); // 重新绘制 Konva Stage
 		}
 	}
 
@@ -233,6 +235,7 @@ export abstract class Editor {
 			if (shapeGroup) {
 				shapeGroup.konvaGroup = newKonvaGroup; // 更新 Konva.Group 对象
 				this.shapeGroupStore.set(id, shapeGroup); // 更新存储中的形状组对象
+				console.log(shapeGroup);
 				return shapeGroup; // 返回更新后的形状组对象
 			}
 		} else {

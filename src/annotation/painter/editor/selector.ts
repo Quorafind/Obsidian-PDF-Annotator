@@ -5,11 +5,13 @@ import {
 } from "../../const/definitions";
 import { KonvaCanvas } from "../index";
 import { SELECTOR_HOVER_STYLE, SHAPE_GROUP_NAME } from "../const";
+import { ItemView } from "obsidian";
 
 /**
  * 定义选择器的选项接口
  */
 export interface ISelectorOptions {
+	view: ItemView;
 	konvaCanvasStore: Map<number, KonvaCanvas>; // 存储各个页面的 Konva 画布实例
 	getAnnotationStore: (id: string) => IAnnotationStore; // 获取注解存储的方法
 	onChange: (
@@ -38,13 +40,17 @@ export class Selector {
 
 	private selectedId: string | null = null;
 
+	private view: ItemView;
+
 	// 构造函数，初始化选择器类
 	constructor({
+		view,
 		konvaCanvasStore,
 		getAnnotationStore,
 		onChange,
 		onDelete,
 	}: ISelectorOptions) {
+		this.view = view;
 		this.konvaCanvasStore = konvaCanvasStore;
 		this.getAnnotationStore = getAnnotationStore;
 		this.onChange = onChange;
@@ -145,7 +151,7 @@ export class Selector {
 	 * 禁用给定组中的所有形状的交互功能。
 	 * @param groups - 要禁用的形状组。
 	 */
-	private disableShapeGroups(groups: Konva.Group[]): void {
+	public disableShapeGroups(groups: Konva.Group[]): void {
 		groups.forEach((group) => {
 			group.getChildren().forEach((shape) => {
 				if (shape instanceof Konva.Shape) {
@@ -255,7 +261,8 @@ export class Selector {
 	 * @param add - 是否添加悬停样式。
 	 */
 	private toggleCursorStyle(add: boolean): void {
-		document.body.classList.toggle(SELECTOR_HOVER_STYLE, add);
+		// document.body.classList.toggle(SELECTOR_HOVER_STYLE, add);
+		this.view.containerEl.toggleClass(SELECTOR_HOVER_STYLE, add);
 	}
 
 	/**
@@ -347,6 +354,7 @@ export class Selector {
 	private globalKeyUpHandler = (e: KeyboardEvent): void => {
 		if (e.code === "Backspace" || e.code === "Delete") {
 			this.onDelete(this.currentTransformerId);
+			this.deactivateTransformer(this.currentTransformerId);
 			this.clearTransformers();
 		}
 	};

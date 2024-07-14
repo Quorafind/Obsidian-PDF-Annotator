@@ -230,3 +230,7 @@
   font-weight: normal;
   font-style: normal;
 }
+
+.PdfjsAnnotationExtension_is_painting .pdf-container .textLayer {
+  user-select: none !important;
+}

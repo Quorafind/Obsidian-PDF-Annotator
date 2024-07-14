@@ -50,7 +50,7 @@ export default defineConfig(({mode}) => {
 					// Overwrite default Vite output fileName
 					entryFileNames: 'main.js',
 					assetFileNames: 'styles.css',
-					dir: mode === 'production' ? 'templify-releases/dist' : '.',
+					dir: '.',
 				},
 				external: [
 					'obsidian',

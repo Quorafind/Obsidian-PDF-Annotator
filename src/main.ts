@@ -1,4 +1,11 @@
-import { App, Component, ItemView, Plugin } from "obsidian";
+import {
+	App,
+	Component,
+	ItemView,
+	Plugin,
+	View,
+	WorkspaceLeaf,
+} from "obsidian";
 import PdfjsAnnotationExtension from "./annotation";
 import { around } from "monkey-around";
 import { IAnnotationStore } from "@/annotation/const/definitions";
@@ -19,34 +26,11 @@ export default class MyPlugin extends Plugin {
 		const leaves = this.app.workspace.getLeavesOfType("pdf");
 		if (leaves.length > 0) {
 			for (const leaf of leaves) {
-				if (!leaf.view.viewer) continue;
-				if (leaf.view.viewer.pdfAnnotator) continue;
-				const annotator = new PdfjsAnnotationExtension(
-					leaf.view.viewer.child.pdfViewer,
-					leaf.view.viewer,
-					leaf.view as ItemView,
-					this,
-				);
-				this.pdfAnnotators.push(annotator);
+				this.createToolbar(leaf, this);
 			}
 		}
 
-		this.app.workspace.on("active-leaf-change", (leaf) => {
-			if (leaf.view.file && leaf.view.file.extension === "pdf") {
-				if (!leaf.view.viewer) return;
-				if (leaf.view.viewer.pdfAnnotator) return;
-				const annotator = new PdfjsAnnotationExtension(
-					leaf.view.viewer.child.pdfViewer,
-					leaf.view.viewer,
-
-					leaf.view as ItemView,
-					this,
-				);
-				leaf.view.viewer.pdfAnnotator = annotator;
-				this.pdfAnnotators.push(annotator);
-			}
-		});
-
+		this.patchView(this);
 		this.patchPDFViewer();
 	}
 
@@ -56,6 +40,54 @@ export default class MyPlugin extends Plugin {
 			annotator.viewer.pdfAnnotator = null;
 		}
 		this.pdfAnnotators = [];
+	}
+
+	createToolbar(leaf: WorkspaceLeaf, plugin: MyPlugin) {
+		console.log(leaf.view.viewer, leaf.view.viewer.pdfAnnotator);
+		if (!leaf.view.viewer || leaf.view.viewer.pdfAnnotator) return;
+		const annotator = new PdfjsAnnotationExtension(
+			leaf.view.viewer.child.pdfViewer,
+			leaf.view.viewer,
+			leaf.view as ItemView,
+			this,
+		);
+		this.pdfAnnotators.push(annotator);
+	}
+
+	patchView(plugin: MyPlugin) {
+		const uninstaller = around(WorkspaceLeaf.prototype, {
+			setViewState: (next: any) =>
+				function (viewState, eState) {
+					console.log(this.view);
+					if (viewState.type === "pdf") {
+						plugin.patchPdfView(this.view, plugin);
+						uninstaller();
+					}
+					return next.call(this, viewState, eState);
+				},
+		});
+
+		// this.register(uninstaller);
+	}
+
+	patchPdfView(view: View, plugin: MyPlugin) {
+		setTimeout(() => {
+			this.createToolbar(view.leaf, this);
+		}, 200);
+		console.log(view);
+		const uninstaller = around(view.constructor.prototype, {
+			onload: (next: any) =>
+				function () {
+					setTimeout(() => {
+						if (this.file && this.file.extension === "pdf") {
+							plugin.createToolbar(view.leaf, plugin);
+						}
+					}, 200);
+					return next.call(this);
+				},
+		});
+
+		this.register(uninstaller);
 	}
 
 	patchPDFViewer() {

@@ -76,7 +76,7 @@ export default class PdfjsAnnotationExtension {
 
 	public unload() {
 		// this.painter.unmount();
-		document.body.classList.remove("PdfjsAnnotationExtension");
+		this.view.containerEl.toggleClass("PdfjsAnnotationExtension", false);
 		this.toolbarRoot && this.toolbarRoot.unmount();
 		// this.unbindPdfjsEvents();
 		this.toolbarContainer.detach();
@@ -86,7 +86,8 @@ export default class PdfjsAnnotationExtension {
 	 * @description 添加自定义样式
 	 */
 	private addCustomStyle(): void {
-		document.body.classList.add("PdfjsAnnotationExtension");
+		// document.body.classList.add("PdfjsAnnotationExtension");
+		this.view.containerEl.toggleClass("PdfjsAnnotationExtension", true);
 	}
 
 	/**

@@ -7,6 +7,7 @@ import {
 	PDFViewerApplication,
 } from "pdfjs";
 import {
+	annotationDefinitions,
 	AnnotationType,
 	IAnnotationContent,
 	IAnnotationStore,
@@ -93,6 +94,7 @@ export class Painter {
 
 		// this.restorePdfjsAnnotationStorage(restoreAnnotations); // 恢复 PDF.js 批注存储
 		this.selector = new Selector({
+			view: this.view,
 			// 初始化选择器实例
 			konvaCanvasStore: this.konvaCanvasStore,
 			getAnnotationStore: (id: string) => {
@@ -100,6 +102,7 @@ export class Painter {
 			},
 			onChange: async (id, groupString, rawAnnotationStore) => {
 				const editor = this.findEditorForGroupId(id);
+
 				if (editor) {
 					this.store.update(id, {
 						konvaString: groupString,
@@ -120,6 +123,8 @@ export class Painter {
 			// 初始化 WebSelection 实例
 			onSelect: (pageNumber, elements) => {
 				const canvas = this.konvaCanvasStore.get(pageNumber);
+				console.log("onSelect", canvas, elements, pageNumber);
+
 				if (canvas) {
 					const { konvaStage, wrapper } = canvas;
 					const editor = new EditorHighLight(
@@ -308,23 +313,33 @@ export class Painter {
 		const isPainting = mode === "painting"; // 是否绘画模式
 		const isSelection = mode === "selection"; // 是否选择模式
 		this.webSelection[isSelection ? "enable" : "disable"](); // 启用或禁用 WebSelection
-		document.body.classList.toggle(
+		// document.body.classList.toggle(
+		// 	`${PAINTER_IS_PAINTING_STYLE}`,
+		// 	isPainting,
+		// ); // 添加或移除绘画模式样式
+		this.view.containerEl.toggleClass(
 			`${PAINTER_IS_PAINTING_STYLE}`,
 			isPainting,
 		); // 添加或移除绘画模式样式
+
 		const allAnnotationClasses = Object.values(AnnotationType)
 			.filter((type) => typeof type === "number")
 			.map((type) => `${PAINTER_PAINTING_TYPE}_${type}`);
 		// 移除所有可能存在的批注类型样式
 		allAnnotationClasses.forEach((cls) =>
-			document.body.classList.remove(cls),
+			// document.body.classList.remove(cls),
+			this.view.containerEl.toggleClass(cls, false),
 		);
 		// 移出签名鼠标指针变量
 		removeCssCustomProperty(CURSOR_CSS_PROPERTY);
 
 		if (this.currentAnnotation) {
-			document.body.classList.add(
+			// document.body.classList.add(
+			// 	`${PAINTER_PAINTING_TYPE}_${this.currentAnnotation?.type}`,
+			// );
+			this.view.containerEl.toggleClass(
 				`${PAINTER_PAINTING_TYPE}_${this.currentAnnotation?.type}`,
+				true,
 			);
 		}
 	}
@@ -403,10 +418,72 @@ export class Painter {
 			storeEditor.activate(konvaStage, annotation); // 激活编辑器
 			return;
 		}
-		console.log(annotation.type, "editor not found");
 
 		let editor: Editor | null = null; // 初始化编辑器为空
 		switch (annotation.type) {
+			case AnnotationType.HIGHLIGHT:
+				editor = new EditorHighLight(
+					{
+						konvaStage,
+						pageNumber,
+						annotation,
+						onAdd: (
+							shapeGroup,
+							pdfjsAnnotationStorage,
+							annotationContent,
+						) => {
+							this.saveToStore(
+								shapeGroup,
+								pdfjsAnnotationStorage,
+								annotationContent,
+							);
+						},
+					},
+					annotation.type,
+				);
+				break;
+			case AnnotationType.STRIKEOUT:
+				editor = new EditorHighLight(
+					{
+						konvaStage,
+						pageNumber,
+						annotation,
+						onAdd: (
+							shapeGroup,
+							pdfjsAnnotationStorage,
+							annotationContent,
+						) => {
+							this.saveToStore(
+								shapeGroup,
+								pdfjsAnnotationStorage,
+								annotationContent,
+							);
+						},
+					},
+					annotation.type,
+				);
+				break;
+			case AnnotationType.UNDERLINE:
+				editor = new EditorHighLight(
+					{
+						konvaStage,
+						pageNumber,
+						annotation,
+						onAdd: (
+							shapeGroup,
+							pdfjsAnnotationStorage,
+							annotationContent,
+						) => {
+							this.saveToStore(
+								shapeGroup,
+								pdfjsAnnotationStorage,
+								annotationContent,
+							);
+						},
+					},
+					annotation.type,
+				);
+				break;
 			case AnnotationType.FREETEXT:
 				editor = new EditorFreeText({
 					konvaStage,
@@ -550,26 +627,27 @@ export class Painter {
 	 * 重新绘制批注
 	 * @param pageNumber - 页码
 	 */
-	private reDrawAnnotation(pageNumber: number): void {
+	private async reDrawAnnotation(pageNumber: number): Promise<void> {
 		const konvaCanvasStore = this.konvaCanvasStore.get(pageNumber); // 获取 KonvaCanvas 实例
 		const annotationStores = this.store.getByPage(pageNumber); // 获取指定页码的批注存储
-		console.log("reDrawAnnotation", pageNumber, annotationStores);
-		annotationStores.forEach((annotationStore) => {
+		for (const annotationStore of annotationStores) {
 			const storeEditor = this.findEditor(
 				pageNumber,
 				annotationStore.type,
 			); // 查找编辑器实例
-			if (storeEditor) {
-				storeEditor.addSerializedGroupToLayer(
-					konvaCanvasStore.konvaStage,
-					annotationStore.konvaString,
-				); // 添加序列化组到图层
-			} else {
+			try {
+				if (storeEditor) {
+					storeEditor.addSerializedGroupToLayer(
+						konvaCanvasStore.konvaStage,
+						annotationStore.konvaString,
+					); // 添加序列化组到图层
+				}
+			} catch (e) {
 				console.warn(
 					`Editor not found for annotation type: ${annotationStore.type}`,
 				);
 			}
-		});
+		}
 	}
 
 	/**
@@ -590,12 +668,16 @@ export class Painter {
 			annotationStore.pageNumber,
 			annotationStore.type,
 		);
+		this.plugin.controller.deleteAnnotation(this.view.file.path, id);
 		if (storeEditor) {
 			console.log(storeEditor);
+			this.reDrawAnnotation(annotationStore.pageNumber);
 			storeEditor.deleteGroup(id, konvaCanvasStore.konvaStage);
+			// 在删除注释后调用 draw 方法来更新画布
+			if (konvaCanvasStore.konvaStage) {
+				konvaCanvasStore.konvaStage.draw();
+			}
 		}
-
-		this.plugin.controller.deleteAnnotation(this.view.file.path, id);
 	}
 
 	/**
@@ -734,40 +816,27 @@ export class Painter {
 
 				if (konvaCanvas) {
 					const { konvaStage } = konvaCanvas;
-
+					this.enableEditor({
+						konvaStage,
+						pageNumber,
+						annotation: annotationDefinitions.find((a) => {
+							return a.type === type;
+						}),
+					});
 					// 查找或创建对应类型的编辑器
-					let editor = this.findEditor(pageNumber, type);
-					if (!editor) {
-						editor = new EditorHighLight(
-							{
-								konvaStage,
-								pageNumber,
-								annotation: null,
-								onAdd: (
-									shapeGroup,
-									pdfjsAnnotationStorage,
-									annotationContent,
-								) => {
-									this.saveToStore(
-										shapeGroup,
-										pdfjsAnnotationStorage,
-										annotationContent,
-									);
-								},
-							},
-							type,
-						);
+					const editor = this.findEditor(pageNumber, type);
 
+					try {
 						if (editor) {
-							this.editorStore.set(editor.id, editor);
+							editor.addSerializedGroupToLayer &&
+								editor.addSerializedGroupToLayer(
+									konvaStage,
+									konvaString,
+								);
 						}
-					}
-
-					// 使用编辑器重新绘制批注
-					if (editor) {
-						editor.addSerializedGroupToLayer(
-							konvaStage,
-							konvaString,
+					} catch (e) {
+						console.warn(
+							`Editor not found for annotation type: ${type}`,
 						);
 					}
 				}

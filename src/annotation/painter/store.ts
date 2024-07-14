@@ -132,15 +132,8 @@ export class Store {
 				annotationStorage.remove(key);
 			}
 		}
-
-		console.log(this.annotationStore);
 		this.annotationStore.forEach(async (annotation, id) => {
 			if (annotation.content && annotation.content.image) {
-				console.warn(
-					"resetAnnotationStorage",
-					annotation,
-					annotation.content,
-				);
 				// 如果存在 content.image，将其 base64 转换为 ImageBitmap
 				annotation.pdfjsAnnotationStorage.bitmap =
 					await base64ToImageBitmap(annotation.content.image);
