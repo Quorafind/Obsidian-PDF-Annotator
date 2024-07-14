@@ -3,9 +3,9 @@ import {
 	IAnnotationStore,
 	IPdfjsAnnotationStorage,
 } from "../const/definitions";
-import { base64ToImageBitmap } from "../utils/utils";
 import { IShapeGroup } from "./editor/editor";
 import { PDFViewerApplication } from "pdfjs";
+import { base64ToImageBitmap } from "@/annotation/utils/utils";
 
 const PDFJS_INTERNAL_EDITOR_PREFIX = "pdfjs_internal_editor_";
 
@@ -133,6 +133,7 @@ export class Store {
 			}
 		}
 		this.annotationStore.forEach(async (annotation, id) => {
+			console.warn("resetAnnotationStorage", annotation, id);
 			if (annotation.content && annotation.content.image) {
 				// 如果存在 content.image，将其 base64 转换为 ImageBitmap
 				annotation.pdfjsAnnotationStorage.bitmap =

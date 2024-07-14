@@ -269,7 +269,7 @@ export const annotationDefinitions: IAnnotationType[] = [
 		icon: <HighlightIcon />,
 		style: {
 			color: DefaultSettings.HIGHLIGHT_COLOR, // 默认高亮颜色
-			opacity: 0.5, // 默认透明度
+			opacity: 0.2, // 默认透明度
 		},
 	},
 	{

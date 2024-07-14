@@ -1,4 +1,4 @@
-import Highlighter from 'web-highlighter';
+import Highlighter from "web-highlighter";
 
 /**
  * WebSelection 类用于处理网页选区的实用工具类。
@@ -12,7 +12,7 @@ export class WebSelection {
 	 * 构造一个新的 WebSelection 实例。
 	 * @param onSelect 当选区被选中时调用的回调函数
 	 */
-	constructor({onSelect}) {
+	constructor({ onSelect }) {
 		this.isEditing = false;
 		this.onSelect = onSelect;
 		this.highlighterObj = null;
@@ -26,17 +26,17 @@ export class WebSelection {
 		if (this.highlighterObj) return;
 		this.highlighterObj = new Highlighter({
 			$root: root,
-			wrapTag: 'mark'
+			wrapTag: "mark",
 		});
-		this.highlighterObj.on('selection:create', data => {
-			const allSourcesId = data.sources.map(item => item.id);
+		this.highlighterObj.on("selection:create", (data) => {
+			const allSourcesId = data.sources.map((item) => item.id);
 			const allSourcesSpan = [];
-			allSourcesId.forEach(value => {
+			allSourcesId.forEach((value) => {
 				allSourcesSpan.push(...this.highlighterObj.getDoms(value));
 			});
 
-			const pageSelection = Object.groupBy(allSourcesSpan, span => {
-				return span.closest('.page').getAttribute('data-page-number');
+			const pageSelection = Object.groupBy(allSourcesSpan, (span) => {
+				return span.closest(".page").getAttribute("data-page-number");
 			});
 
 			for (const pageNumber in pageSelection) {
@@ -52,6 +52,7 @@ export class WebSelection {
 	 */
 	enable() {
 		this.isEditing = true;
+		console.log(this.highlighterObj);
 		this.highlighterObj?.run();
 	}
 
@@ -61,5 +62,9 @@ export class WebSelection {
 	disable() {
 		this.isEditing = false;
 		this.highlighterObj?.stop();
+	}
+
+	unload() {
+		this.highlighterObj?.dispose();
 	}
 }

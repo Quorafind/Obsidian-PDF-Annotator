@@ -1,11 +1,4 @@
-import {
-	App,
-	Component,
-	ItemView,
-	Plugin,
-	View,
-	WorkspaceLeaf,
-} from "obsidian";
+import { App, Component, ItemView, Plugin, WorkspaceLeaf } from "obsidian";
 import PdfjsAnnotationExtension from "./annotation";
 import { around } from "monkey-around";
 import { IAnnotationStore } from "@/annotation/const/definitions";
@@ -14,9 +7,8 @@ import {
 	loadAnnotationsJson,
 } from "@/annotation/utils/json";
 import { IPdfJSAnnotationStore } from "@/types/store";
-// import { around } from "monkey-around";
 
-export default class MyPlugin extends Plugin {
+export default class PdfAnnotatorPlugin extends Plugin {
 	pdfAnnotators: PdfjsAnnotationExtension[] = [];
 	public controller: IAnnotationStoreController =
 		new IAnnotationStoreController(this.app);
@@ -42,8 +34,7 @@ export default class MyPlugin extends Plugin {
 		this.pdfAnnotators = [];
 	}
 
-	createToolbar(leaf: WorkspaceLeaf, plugin: MyPlugin) {
-		console.log(leaf.view.viewer, leaf.view.viewer.pdfAnnotator);
+	createToolbar(leaf: WorkspaceLeaf, plugin: PdfAnnotatorPlugin) {
 		if (!leaf.view.viewer || leaf.view.viewer.pdfAnnotator) return;
 		const annotator = new PdfjsAnnotationExtension(
 			leaf.view.viewer.child.pdfViewer,
@@ -54,36 +45,18 @@ export default class MyPlugin extends Plugin {
 		this.pdfAnnotators.push(annotator);
 	}
 
-	patchView(plugin: MyPlugin) {
+	patchView(plugin: PdfAnnotatorPlugin) {
 		const uninstaller = around(WorkspaceLeaf.prototype, {
 			setViewState: (next: any) =>
 				function (viewState, eState) {
-					console.log(this.view);
+					const result = next.call(this, viewState, eState);
 					if (viewState.type === "pdf") {
-						plugin.patchPdfView(this.view, plugin);
-						uninstaller();
+						setTimeout(() => {
+							plugin.createToolbar(this, plugin);
+						}, 200);
+						// uninstaller();
 					}
-					return next.call(this, viewState, eState);
-				},
-		});
-
-		// this.register(uninstaller);
-	}
-
-	patchPdfView(view: View, plugin: MyPlugin) {
-		setTimeout(() => {
-			this.createToolbar(view.leaf, this);
-		}, 200);
-		console.log(view);
-		const uninstaller = around(view.constructor.prototype, {
-			onload: (next: any) =>
-				function () {
-					setTimeout(() => {
-						if (this.file && this.file.extension === "pdf") {
-							plugin.createToolbar(view.leaf, plugin);
-						}
-					}, 200);
-					return next.call(this);
+					return result;
 				},
 		});
 

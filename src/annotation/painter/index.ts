@@ -33,8 +33,8 @@ import {
 	PAINTER_WRAPPER_PREFIX,
 } from "./const";
 import { EditorFreeText } from "./editor/editor_free_text";
-import { ItemView } from "obsidian";
-import MyPlugin from "@/main";
+import { ItemView, Scope } from "obsidian";
+import PdfAnnotatorPlugin from "@/main";
 
 // KonvaCanvas 接口定义
 export interface KonvaCanvas {
@@ -58,7 +58,7 @@ export class Painter {
 	public readonly setDefaultMode: () => void; // 设置默认模式的函数引用
 
 	private view: ItemView; // 视图
-	private plugin: MyPlugin; // 插件实例
+	private plugin: PdfAnnotatorPlugin; // 插件实例
 
 	/**
 	 * 构造函数，初始化 PDFViewerApplication, EventBus, 和 WebSelection
@@ -72,7 +72,7 @@ export class Painter {
 		setDefaultMode,
 	}: {
 		view: ItemView;
-		plugin: MyPlugin;
+		plugin: PdfAnnotatorPlugin;
 		PDFViewerApplication: PDFViewerApplication;
 		PDFJS_EventBus: EventBus;
 		setDefaultMode: () => void;
@@ -158,6 +158,8 @@ export class Painter {
 	 * 绑定全局事件。
 	 */
 	private bindGlobalEvents(): void {
+		console.log(this.view.scope);
+		this.view.scope = new Scope(this.plugin.app.scope);
 		this.view.scope.register([], "Escape", () => {
 			if (
 				this.currentAnnotation.type === AnnotationType.SIGNATURE ||
@@ -280,7 +282,7 @@ export class Painter {
 			[]; // 获取批注
 
 		this.restorePdfjsAnnotationStorage(pageNumber, restoreAnnotations); // 恢复 PDF.js 批注存储
-		this.resetPdfjsAnnotationStorage();
+		// this.resetPdfjsAnnotationStorage();
 
 		this.reDrawAnnotation(pageNumber); // 重绘批注
 
@@ -312,6 +314,7 @@ export class Painter {
 	private setMode(mode: "selection" | "painting" | "default"): void {
 		const isPainting = mode === "painting"; // 是否绘画模式
 		const isSelection = mode === "selection"; // 是否选择模式
+		console.log("setMode", mode, isPainting, isSelection);
 		this.webSelection[isSelection ? "enable" : "disable"](); // 启用或禁用 WebSelection
 		// document.body.classList.toggle(
 		// 	`${PAINTER_IS_PAINTING_STYLE}`,
@@ -398,6 +401,7 @@ export class Painter {
 		annotation: IAnnotationType;
 	}): void {
 		const storeEditor = this.findEditor(pageNumber, annotation.type); // 查找存储中的编辑器实例
+
 		if (storeEditor) {
 			if (storeEditor instanceof EditorSignature) {
 				storeEditor.activateWithSignature(
@@ -419,6 +423,8 @@ export class Painter {
 			return;
 		}
 
+		console.log("enableEditor", annotation, pageNumber, konvaStage);
+
 		let editor: Editor | null = null; // 初始化编辑器为空
 		switch (annotation.type) {
 			case AnnotationType.HIGHLIGHT:
@@ -432,6 +438,12 @@ export class Painter {
 							pdfjsAnnotationStorage,
 							annotationContent,
 						) => {
+							console.log(
+								"EditorHighLight onAdd",
+								shapeGroup,
+								pdfjsAnnotationStorage,
+								annotationContent,
+							);
 							this.saveToStore(
 								shapeGroup,
 								pdfjsAnnotationStorage,
@@ -453,6 +465,12 @@ export class Painter {
 							pdfjsAnnotationStorage,
 							annotationContent,
 						) => {
+							console.log(
+								"EditorHighLight onAdd",
+								shapeGroup,
+								pdfjsAnnotationStorage,
+								annotationContent,
+							);
 							this.saveToStore(
 								shapeGroup,
 								pdfjsAnnotationStorage,
@@ -474,6 +492,12 @@ export class Painter {
 							pdfjsAnnotationStorage,
 							annotationContent,
 						) => {
+							console.log(
+								"EditorHighLight onAdd",
+								shapeGroup,
+								pdfjsAnnotationStorage,
+								annotationContent,
+							);
 							this.saveToStore(
 								shapeGroup,
 								pdfjsAnnotationStorage,
@@ -855,10 +879,12 @@ export class Painter {
 			editor.unload();
 		});
 		this.editorStore.clear();
-		this.selector.clear();
-		this.webSelection = null;
-		this.store = null;
-		this.currentAnnotation = null;
-		this.tempDataTransfer = null;
+		this.webSelection.unload();
+		//
+		// this.webSelection = null;
+		// this.store = null;
+		// this.selector = null;
+		// this.currentAnnotation = null;
+		// this.tempDataTransfer = null;
 	}
 }
