@@ -4,6 +4,8 @@
 
 Simple but powerful PDF annotator for Obsidian.
 
+![screenshot](./media/screenshot.png)
+
 **Stay tuned when Obsidian merge the pdf.js 4.x version, I will support save the annotations into pdf file.**
 
 ## Features
@@ -52,7 +54,7 @@ Option 1:
 3. Extract its contents
 4. Move the contents into /your-vault/.obsidian/plugins/obsidian-PDF-Annotator/
 5. Go to *Settings > Community plugins*
-6. Enable Legacy vault switcher
+6. Enable PDF Annotator
 
 Option 2:
 
@@ -60,7 +62,7 @@ Option 2:
 2. Download the latest `main.js`, `styles.css` and `manifest.json`
 3. Move the files into /your-vault/.obsidian/plugins/obsidian-PDF-Annotator/
 5. Go to *Settings > Community plugins*
-6. Enable Legacy vault switcher
+6. Enable PDF Annotator
 
 
 ## Credits

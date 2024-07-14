@@ -1,8 +1,10 @@
 # Obsidian PDF 注释器
 
-[中文文档](./README_CN.md)
+[English](./README.md)
 
 简单但功能强大的 Obsidian PDF 注释工具。
+
+![screenshot](./media/screenshot.png)
 
 **当 Obsidian 合并 pdf.js 4.x 版本时，我将支持将注释保存到 PDF 文件中，或者保存成 Obsidian 所支持的注释。**
 
@@ -51,7 +53,7 @@
 3. 解压内容
 4. 将内容移动到 /your-vault/.obsidian/plugins/obsidian-PDF-Annotator/
 5. 转到*设置 > 社区插件*
-6. 启用遗留库切换器
+6. 启用 PDF Annotator
 
 选项 2：
 
@@ -59,7 +61,7 @@
 2. 下载最新的 `main.js`、`styles.css` 和 `manifest.json`
 3. 将文件移动到 /your-vault/.obsidian/plugins/obsidian-PDF-Annotator/
 5. 转到*设置 > 社区插件*
-6. 启用遗留库切换器
+6. 启用 PDF Annotator
 
 ## 致谢
 
