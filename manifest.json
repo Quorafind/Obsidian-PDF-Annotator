@@ -1,7 +1,7 @@
 {
 	"id": "pdf-annotator",
 	"name": "Pdf Annotator",
-	"version": "0.0.1",
+	"version": "1.0.0",
 	"minAppVersion": "1.4.0",
 	"description": "Simple PDF annotator.",
 	"author": "Boninall",

@@ -1,8 +1,10 @@
 # Obsidian PDF Annotator
 
+[中文文档](./README_CN.md)
+
 Simple but powerful PDF annotator for Obsidian.
 
-
+**Stay tuned when Obsidian merge the pdf.js 4.x version, I will support save the annotations into pdf file.**
 
 ## Features
 
@@ -14,6 +16,10 @@ Simple but powerful PDF annotator for Obsidian.
     - Circle;
     - Rectangle;
   - Add signatures;
+- Currently, it is not possible to save the highlight annotations to the PDF file itself (So I don't support save it into pdf yet), but the annotations are saved in the Obsidian vault. 
+  - Because Obsidian is still using 3.9.0 version of pdf.js, which does not support save highlight annotations to the PDF file itself.
+  - And the highlight annotations is supported in 4.x stage of Pdf.js.
+  - **All the annotations is follow the pdf.js annotations extension format, so it is possible to save it into pdf file in the future.**
 
 ## Installation
 
