@@ -69,11 +69,6 @@ export class Store {
 			content: annotationContent,
 			time: new Date().getTime(),
 		});
-		console.log(
-			"%c [ annotationStore ]",
-			"font-size:13px; background:#6318bc; color:#a75cff;",
-			this.annotationStore,
-		);
 	}
 
 	public update(id: string, updates: Partial<IAnnotationStore>) {

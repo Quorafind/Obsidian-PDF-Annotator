@@ -235,7 +235,6 @@ export abstract class Editor {
 			if (shapeGroup) {
 				shapeGroup.konvaGroup = newKonvaGroup; // 更新 Konva.Group 对象
 				this.shapeGroupStore.set(id, shapeGroup); // 更新存储中的形状组对象
-				console.log(shapeGroup);
 				return shapeGroup; // 返回更新后的形状组对象
 			}
 		} else {

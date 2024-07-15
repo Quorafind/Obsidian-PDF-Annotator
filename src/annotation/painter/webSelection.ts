@@ -52,7 +52,6 @@ export class WebSelection {
 	 */
 	enable() {
 		this.isEditing = true;
-		console.log(this.highlighterObj);
 		this.highlighterObj?.run();
 	}
 

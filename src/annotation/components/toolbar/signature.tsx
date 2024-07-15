@@ -185,7 +185,11 @@ const SignatureTool: React.FC<SignatureToolProps> = (props) => {
 							})}
 						</ul>
 						<div className="SignaturePop-Toolbar">
-							<Button block onClick={openModal}>
+							<Button
+								block
+								onClick={openModal}
+								className={"Create-Signature-Button"}
+							>
 								创建签名
 							</Button>
 						</div>

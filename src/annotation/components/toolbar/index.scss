@@ -71,7 +71,7 @@
 
     &-Container {
         background-color: #eee;
-        border: 1px solid #ccc;
+        border: 1px solid var(--background-modifier-border);
         position: relative;
         margin: 0 auto;
 
@@ -95,7 +95,7 @@
     }
 
     &-Toolbar {
-        border: 1px solid #ccc;
+        border: 1px solid var(--background-modifier-border);
         border-top: 0;
         display: flex;
         justify-content: space-between;
@@ -143,6 +143,7 @@
 .SignaturePop {
     .ant-popover-inner {
         padding: 5px;
+		background: var(--background-secondary)
     }
 
     ul,
@@ -170,7 +171,125 @@
 
     &-Toolbar {
         padding: 5px;
+
+		.Create-Signature-Button {
+			background: var(--background-primary);
+			color: var(--text-normal);
+			border-color: var(--background-modifier-border);
+
+			&:hover {
+				background: var(--background-secondary) !important;
+				color: var(--text-normal) !important;
+				border-color: var(--background-modifier-hover) !important;
+			}
+		}
     }
+}
+
+.ant-modal {
+	color: var(--text-normal) !important;
+
+	&-title {
+		color: var(--text-normal) !important;
+		background-color: var(--background-primary) !important;
+	}
+
+	&-content {
+		background-color: var(--modal-background) !important;
+		border-radius: var(--modal-radius) !important;
+		border: var(--modal-border-width) solid var(--modal-border-color) !important;
+	}
+
+	&-close {
+		color: var(--text-normal) !important;
+	}
+
+	&-footer {
+
+		button {
+			color: var(--text-normal) !important;
+			background-color: var(--background-primary) !important;
+			border-color: var(--background-primary) !important;
+
+			&:hover {
+				color: var(--text-normal) !important;
+				background-color: var(--background-secondary) !important;
+				border-color: var(--background-secondary) !important;
+			}
+		}
+	}
+}
+
+.ant-popover {
+	--antd-arrow-background-color: var(--background-secondary) !important;
+	border-color: var(--background-modifier-border) !important;
+	color: var(--text-normal) !important;
+
+	&-inner {
+		background-color: var(--background-secondary) !important;
+		border-color: var(--background-modifier-border) !important;
+		color: var(--text-normal) !important;
+	}
+}
+
+.ant-input {
+	&-outlined {
+		background-color: var(--background-secondary) !important;
+		border-color: var(--background-modifier-border) !important;
+		color: var(--text-normal) !important;
+	}
+}
+
+.ant-select {
+	background-color: var(--background-secondary) !important;
+	border-color: var(--background-modifier-border) !important;
+	color: var(--text-normal) !important;
+
+	&-selector {
+		background-color: var(--background-secondary) !important;
+		border-color: var(--background-modifier-border) !important;
+		color: var(--text-normal) !important;
+	}
+
+	&-dropdown {
+		background-color: var(--background-secondary) !important;
+		border-color: var(--background-modifier-border) !important;
+		color: var(--text-normal) !important;
+	}
+
+	&-item {
+		background-color: var(--background-secondary) !important;
+		border-color: var(--background-modifier-border) !important;
+		color: var(--text-normal) !important;
+
+	}
+}
+
+.ant-color-picker-presets-label {
+	color: var(--text-normal) !important;
+
+}
+
+.ant-dropdown {
+	border-color: var(--background-modifier-border) !important;
+	color: var(--text-normal) !important;
+
+	&-menu {
+		background-color: var(--background-secondary) !important;
+		border-color: var(--background-modifier-border) !important;
+		color: var(--text-normal) !important;
+
+		&-item {
+			color: var(--text-normal) !important;
+
+			&:hover {
+				background-color: var(--background-modifier-hover) !important;
+			}
+		}
+	}
+
+
+
 }
 
 .StampTool {

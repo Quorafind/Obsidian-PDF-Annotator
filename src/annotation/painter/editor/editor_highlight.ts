@@ -42,10 +42,7 @@ export class EditorHighLight extends Editor {
 			);
 			const shape = this.createShape(x, y, width, height);
 			this.currentShapeGroup.konvaGroup.add(shape);
-			console.log(shape);
 		});
-
-		console.log(elements);
 
 		this.setShapeGroupDone(
 			this.currentShapeGroup.id,

@@ -200,11 +200,11 @@ export default class PdfjsAnnotationExtension {
 		// 		this.PDFJS_PDFViewerApplication._ensureDownloadComplete();
 		// 		const n =
 		// 			(await this.PDFJS_PDFViewerApplication.pdfDocument.saveDocument()) as Uint8Array;
-		// 		console.log(n);
+		//
 		// 		const r = new Blob([n], { type: "application/pdf" });
 		// 		// const arrayBuffer = await r.arrayBuffer();
 		//
-		// 		console.log(this.view);
+		//
 		// 		const file = await this.plugin.app.vault.adapter.exists(
 		// 			normalizePath(this.file.path),
 		// 		);
@@ -239,7 +239,6 @@ export default class PdfjsAnnotationExtension {
 		// };
 
 		this.PDFJS_PDFViewerApplication.save = async (downloadOptions: any) => {
-			console.log("save", this.view.file.path, downloadOptions);
 			if (!this.view.file) return;
 
 			let options = downloadOptions || {};
@@ -320,8 +319,6 @@ export default class PdfjsAnnotationExtension {
 		this.view.scope.register(["Mod"], "s", () => {
 			this.PDFJS_PDFViewerApplication.save();
 		});
-
-		console.log("registerScopeEvents", this.view.scope);
 	}
 }
 
