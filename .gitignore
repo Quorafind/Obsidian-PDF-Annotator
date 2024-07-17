@@ -25,3 +25,5 @@ data.json
 *.zip
 *.tar.gz
 *.rar
+
+styles.css
